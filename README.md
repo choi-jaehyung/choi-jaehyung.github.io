@@ -1,1 +1,0 @@
-# choi-jaehyung.github.io
