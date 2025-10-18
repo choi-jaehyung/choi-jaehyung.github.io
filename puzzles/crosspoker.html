@@ -87,6 +87,14 @@
             text-align: center;
             flex-shrink: 0; /* Prevents status from shrinking */
         }
+        
+        @keyframes flash {
+            50% { background-color: #fef08a; } /* yellow-200 */
+        }
+        .flash-hint {
+            animation: flash 1s ease-in-out;
+        }
+
         @media (max-width: 768px) {
             #main-container { flex-direction: column; }
             #card-tracker-container { margin-top: 1.5rem; width: 100%; }
@@ -98,7 +106,6 @@
                 writing-mode: vertical-rl;
                 text-orientation: mixed;
                 padding: 0.25rem 0;
-                aspect-ratio: auto; /* Override aspect ratio on mobile to ensure uniform size */
             }
             .card-input { font-size: 0.75rem; }
             #top-hand-cell, #bottom-diag-hand-cell { writing-mode: horizontal-tb !important; }
@@ -255,11 +262,11 @@
                 }
                 return 'Straight<br>Flush';
             }
-            if (counts[0] === 4) return '4 Card';
+            if (counts[0] === 4) return '4 Cards';
             if (counts[0] === 3 && counts[1] === 2) return 'Full<br>House';
             if (isFlush) return 'Flush';
             if (isStraight) return 'Straight';
-            if (counts[0] === 3) return '3 Card';
+            if (counts[0] === 3) return 'Triple';
             if (counts[0] === 2 && counts[1] === 2) return '2 Pair';
             if (counts[0] === 2) return '1 Pair';
             const highRank = VALUE_RANKS[ranks[4]];
@@ -401,7 +408,7 @@
             startTimer();
         }
 
-        function renderBoard(reveal = false) {
+        function renderBoard(revealConfig = { isRevealing: false }) {
             gameBoard.innerHTML = '';
             const { rows, cols, diag1, diag2 } = originalHands;
 
@@ -469,13 +476,33 @@
                     const suitSelect = createSelect('suit');
                     const rankSelect = createSelect('rank');
                     
-                    if (reveal) {
-                         if (!state.showSuit) suitSelect.classList.add('revealed-by-button');
-                         if (!state.showRank) rankSelect.classList.add('revealed-by-button');
-                         suitSelect.value = card.suit;
-                         rankSelect.value = card.rank;
+                    if (revealConfig.isRevealing) {
+                         const userSuit = revealConfig.userBoard[r][c].suit;
+                         const userRank = revealConfig.userBoard[r][c].rank;
+                         
+                         if (!state.showSuit) {
+                            suitSelect.value = card.suit;
+                            suitSelect.classList.add('revealed-by-button');
+                            if (userSuit !== '?' && userSuit !== card.suit) {
+                                suitSelect.classList.add('incorrect');
+                            }
+                         } else {
+                            suitSelect.value = card.suit;
+                         }
+
+                         if (!state.showRank) {
+                            rankSelect.value = card.rank;
+                            rankSelect.classList.add('revealed-by-button');
+                            if (userRank !== '?' && userRank !== card.rank) {
+                                rankSelect.classList.add('incorrect');
+                            }
+                         } else {
+                            rankSelect.value = card.rank;
+                         }
+
                          suitSelect.disabled = true;
                          rankSelect.disabled = true;
+
                     } else {
                         if (state.showSuit) { suitSelect.value = card.suit; suitSelect.disabled = true; }
                         if (state.showRank) { rankSelect.value = card.rank; rankSelect.disabled = true; }
@@ -493,14 +520,14 @@
                     gameBoard.appendChild(cardCell);
                 }
                 const rowHandCell = document.createElement('div');
-                rowHandCell.innerHTML = rows[r]; // Use innerHTML to render <br> tags
+                rowHandCell.innerHTML = rows[r];
                 rowHandCell.className = 'hand-cell bg-yellow-200 text-yellow-800';
                 gameBoard.appendChild(rowHandCell);
             }
 
             for (let c = 0; c < 5; c++) {
                 const colHandCell = document.createElement('div');
-                colHandCell.innerHTML = cols[c]; // Use innerHTML to render <br> tags
+                colHandCell.innerHTML = cols[c];
                 colHandCell.className = 'hand-cell bg-yellow-200 text-yellow-800';
                 gameBoard.appendChild(colHandCell);
             }
@@ -635,6 +662,10 @@
             const { row, col, type } = randomInput.dataset;
             const correctValue = currentBoard[row][col][type];
             
+            const cardCell = randomInput.parentElement;
+            cardCell.classList.add('flash-hint');
+            setTimeout(() => cardCell.classList.remove('flash-hint'), 1000);
+
             moveHistory.push({
                 element: randomInput,
                 prevValue: randomInput.value
@@ -675,7 +706,16 @@
         
         function revealAll() { 
             stopTimer();
-            renderBoard(true);
+            const userBoard = Array(5).fill(null).map(() => Array(5).fill(null));
+             for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    userBoard[r][c] = {
+                        suit: document.querySelector(`select[data-row='${r}'][data-col='${c}'][data-type='suit']`).value,
+                        rank: document.querySelector(`select[data-row='${r}'][data-col='${c}'][data-type='rank']`).value
+                    }
+                }
+            }
+            renderBoard({ isRevealing: true, userBoard: userBoard });
             updateCardTracker();
         }
         
