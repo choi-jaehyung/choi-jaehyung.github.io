@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cross Poker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            touch-action: manipulation;
+        }
+        .card-cell, .hand-cell {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            aspect-ratio: 5 / 6;
+            user-select: none;
+        }
+        .card-cell {
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border: 4px solid transparent;
+            transition: border-color 0.3s;
+        }
+        .card-input {
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 0.25rem;
+            text-align: center;
+            text-align-last: center; /* For centering text in select */
+            font-size: 1rem;
+            font-weight: bold;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-color: white;
+            cursor: pointer;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .card-input:disabled {
+            background-color: #e5e7eb; /* Default revealed background */
+            opacity: 1;
+            color: black;
+            cursor: not-allowed;
+        }
+        .card-input.revealed-by-button {
+            background-color: #ddd6fe; /* bg-indigo-200 */
+        }
+        .card-input.incorrect {
+             background-color: #fecaca !important; /* Red background for incorrect answers */
+        }
+        .hand-cell {
+             font-size: 1.25rem;
+             overflow: hidden;
+             text-align: center; /* Ensures multi-line text is centered */
+             line-height: 1.2; /* Adjust line height for multi-line text */
+        }
+        /* Card Tracker Styles */
+        #card-tracker {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr)); /* More robust grid column definition */
+            gap: 0.25rem;
+        }
+        .tracker-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.25rem;
+            background-color: white;
+            border-radius: 0.25rem;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            min-width: 0; /* Prevents flex items from overflowing grid cell */
+        }
+        .tracker-card > span:first-child {
+            white-space: nowrap; /* Prevents card name from wrapping */
+        }
+        .tracker-status {
+            font-weight: bold;
+            width: 1rem;
+            text-align: center;
+            flex-shrink: 0; /* Prevents status from shrinking */
+        }
+        
+        @keyframes flash {
+            50% { background-color: #fef08a; } /* yellow-200 */
+        }
+        .flash-hint {
+            animation: flash 1s ease-in-out;
+        }
+
+        @media (max-width: 768px) {
+            #main-container { flex-direction: column; }
+            #card-tracker-container { margin-top: 1.5rem; width: 100%; }
+        }
+        @media (max-width: 640px) {
+            .card-cell { gap: 0.25rem; padding: 0.25rem; }
+            .hand-cell {
+                font-size: 0.75rem;
+                writing-mode: vertical-rl;
+                text-orientation: mixed;
+                padding: 0.25rem 0;
+            }
+            .card-input { font-size: 0.75rem; }
+            #top-hand-cell, #bottom-diag-hand-cell { writing-mode: horizontal-tb !important; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-2 sm:p-4">
+
+    <div id="main-container" class="w-full max-w-4xl mx-auto flex items-start gap-6">
+        <div class="flex-grow">
+            <div id="game-board" class="grid grid-cols-6 gap-2 md:gap-3 bg-gray-300 p-3 md:p-4 rounded-lg shadow-xl mb-6">
+                <!-- JavaScript will populate this -->
+            </div>
+            <div class="flex justify-center flex-wrap gap-2">
+                <button id="new-game-btn" class="px-5 py-2 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 active:bg-blue-800 transition-transform transform active:scale-95">New Game</button>
+                <button id="undo-btn" class="px-5 py-2 bg-gray-600 text-white font-bold rounded-lg shadow-md hover:bg-gray-700 active:bg-gray-800 transition-transform transform active:scale-95">Undo</button>
+                <button id="hint-btn" class="px-5 py-2 bg-yellow-500 text-white font-bold rounded-lg shadow-md hover:bg-yellow-600 active:bg-yellow-700 transition-transform transform active:scale-95 disabled:bg-yellow-300 disabled:cursor-not-allowed">Hint</button>
+                <button id="check-btn" class="px-5 py-2 bg-green-600 text-white font-bold rounded-lg shadow-md hover:bg-green-700 active:bg-green-800 transition-transform transform active:scale-95">Check</button>
+                <button id="reveal-btn" class="px-5 py-2 bg-red-600 text-white font-bold rounded-lg shadow-md hover:bg-red-700 active:bg-red-800 transition-transform transform active:scale-95">Reveal All</button>
+            </div>
+        </div>
+        
+        <div id="card-tracker-container" class="w-64 flex-shrink-0 bg-gray-200 p-3 rounded-lg shadow-lg">
+            <h3 class="text-center font-bold mb-3 text-gray-700">Card Tracker</h3>
+            <div id="card-tracker">
+                <!-- JavaScript will populate this -->
+            </div>
+            <div class="mt-4 text-center">
+                <h4 class="text-lg font-bold text-gray-700">Time</h4>
+                <div id="timer" class="text-2xl font-mono text-gray-900 bg-white py-1 rounded-md shadow-inner">00:00</div>
+            </div>
+            <div class="mt-4 text-center text-xs text-gray-500">
+                Copyright &copy; Jaehyung Choi
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modals -->
+    <div id="success-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl text-center w-11/12 max-w-sm relative">
+            <button id="success-close-btn" class="absolute top-2 right-2 text-2xl text-gray-500 hover:text-gray-800">&times;</button>
+            <h2 class="text-2xl font-bold mb-4">Congratulations!</h2>
+            <p id="success-message" class="mb-2">You found a valid solution!</p>
+            <p id="final-time" class="mb-6 font-semibold text-lg"></p>
+            <button id="modal-close-btn" class="px-5 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Play Again</button>
+        </div>
+    </div>
+     <div id="failure-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl text-center w-11/12 max-w-sm">
+            <h2 class="text-2xl font-bold mb-4 text-red-600">Check Failed</h2>
+            <p id="failure-message" class="mb-6">Please check your board and try again.</p>
+            <button id="failure-close-btn" class="px-5 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700">Close</button>
+        </div>
+    </div>
+    <div id="difficulty-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl text-center w-11/12 max-w-sm relative">
+             <button id="difficulty-close-btn" class="absolute top-2 right-2 text-2xl text-gray-500 hover:text-gray-800">&times;</button>
+            <h2 class="text-2xl font-bold mb-6">Select Difficulty</h2>
+            <div class="flex flex-col gap-4">
+                 <button data-difficulty="Easy" class="difficulty-btn px-5 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-transform transform active:scale-95">Easy <span class="text-sm font-normal">(16 hidden)</span></button>
+                 <button data-difficulty="Medium" class="difficulty-btn px-5 py-3 bg-yellow-500 text-white font-bold rounded-lg hover:bg-yellow-600 transition-transform transform active:scale-95">Medium <span class="text-sm font-normal">(19 hidden)</span></button>
+                 <button data-difficulty="Hard" class="difficulty-btn px-5 py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 transition-transform transform active:scale-95">Hard <span class="text-sm font-normal">(22 hidden)</span></button>
+            </div>
+        </div>
+    </div>
+    <div id="help-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-11/12 max-w-md text-left">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-center">How to Play</h2>
+                <div>
+                    <button id="lang-en-btn" class="px-3 py-1 text-sm bg-blue-500 text-white rounded disabled:bg-blue-300">English</button>
+                    <button id="lang-ko-btn" class="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded">한국어</button>
+                </div>
+            </div>
+            <div id="help-en" class="space-y-3 text-gray-700">
+                <p><strong class="font-semibold text-gray-900">Goal:</strong> Guess the hidden suits and ranks of all cards using the revealed cards and hand rankings as clues.</p>
+                 <p><strong class="font-semibold text-gray-900">Setup:</strong> 25 cards are randomly arranged from a 28-card deck (8 through Ace of each suit).</p>
+                <p><strong class="font-semibold text-gray-900">How to play:</strong> Click the blue <span class="text-blue-600 font-bold">'?'</span> dropdown menus to select the hidden suit and rank of a card.</p>
+                <p><strong class="font-semibold text-gray-900">Card Tracker:</strong> The tracker on the right shows which cards are currently used on the board. (✓: used once, ❗: used more than once).</p>
+            </div>
+            <div id="help-ko" class="space-y-3 text-gray-700 hidden">
+                <p><strong class="font-semibold text-gray-900">목표:</strong> 공개된 카드와 족보 정보를 단서로 모든 카드의 숨겨진 모양과 숫자를 맞추는 것입니다.</p>
+                <p><strong class="font-semibold text-gray-900">설정:</strong> 8부터 A까지 총 28개의 카드 중 25개의 카드가 무작위로 보드에 배열됩니다.</p>
+                <p><strong class="font-semibold text-gray-900">게임 방법:</strong> 파란색 <span class="text-blue-600 font-bold">'?'</span>가 표시된 드롭다운 메뉴를 클릭하여 숨겨진 카드의 모양과 숫자를 선택하세요.</p>
+                <p><strong class="font-semibold text-gray-900">카드 트래커:</strong> 우측의 '카드 사용 현황'에서 보드에 사용된 카드를 실시간으로 확인할 수 있습니다. (✓: 1장 사용, ❗: 2장 이상 중복 사용)</p>
+            </div>
+            <div class="text-center mt-6">
+                <button id="help-modal-close-btn" class="px-5 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const gameBoard = document.getElementById('game-board');
+        const cardTracker = document.getElementById('card-tracker');
+        const newGameBtn = document.getElementById('new-game-btn');
+        const undoBtn = document.getElementById('undo-btn');
+        const hintBtn = document.getElementById('hint-btn');
+        const checkBtn = document.getElementById('check-btn');
+        const revealBtn = document.getElementById('reveal-btn');
+        const successModal = document.getElementById('success-modal');
+        const successCloseBtn = document.getElementById('success-close-btn');
+        const failureModal = document.getElementById('failure-modal');
+        const finalTimeEl = document.getElementById('final-time');
+        const failureMessageEl = document.getElementById('failure-message');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const failureCloseBtn = document.getElementById('failure-close-btn');
+        const difficultyModal = document.getElementById('difficulty-modal');
+        const difficultyCloseBtn = document.getElementById('difficulty-close-btn');
+        const helpModal = document.getElementById('help-modal');
+        const helpModalCloseBtn = document.getElementById('help-modal-close-btn');
+        const langEnBtn = document.getElementById('lang-en-btn');
+        const langKoBtn = document.getElementById('lang-ko-btn');
+        const helpEn = document.getElementById('help-en');
+        const helpKo = document.getElementById('help-ko');
+        const timerEl = document.getElementById('timer');
+
+        // Game Constants
+        const SUITS = ['♠️', '♥️', '♦️', '♣️'];
+        const RANKS = ['8', '9', '10', 'J', 'Q', 'K', 'A'];
+        const RANK_VALUES = { '8': 8, '9': 9, '10': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14 };
+        const VALUE_RANKS = Object.fromEntries(Object.entries(RANK_VALUES).map(([k, v]) => [v, k]));
+        const DIFFICULTY_SETTINGS = {
+            'Easy': { hidden: 16, color: 'text-green-600' },
+            'Medium': { hidden: 19, color: 'text-yellow-600' },
+            'Hard': { hidden: 22, color: 'text-red-600' }
+        };
+        const MAX_HINTS = 3;
+
+        // Game State
+        let currentBoard = [];
+        let displayState = [];
+        let currentDifficulty = 'Hard';
+        let originalHands = {};
+        let timerInterval = null;
+        let startTime = 0;
+        let moveHistory = [];
+        let hintCount = 0;
+        
+        function evaluateHand(hand) {
+            if (!hand || hand.length !== 5 || hand.some(c => !c || !c.rank || !c.suit)) return ' - ';
+            const ranks = hand.map(card => RANK_VALUES[card.rank]).sort((a, b) => a - b);
+            const suits = hand.map(card => card.suit);
+            const rankCounts = ranks.reduce((acc, rank) => { acc[rank] = (acc[rank] || 0) + 1; return acc; }, {});
+            const counts = Object.values(rankCounts).sort((a, b) => b - a);
+            const isFlush = new Set(suits).size === 1;
+            const isStraight = ranks.length === 5 && new Set(ranks).size === 5 && ranks[4] - ranks[0] === 4 && !ranks.some(r => r === undefined);
+            
+            if (isStraight && isFlush) {
+                if (ranks[0] === 10) { // Royal Flush
+                    return `<span class="text-base leading-tight">Royal<br>Straight<br>Flush</span>`;
+                }
+                return 'Straight<br>Flush';
+            }
+            if (counts[0] === 4) return '4 Cards';
+            if (counts[0] === 3 && counts[1] === 2) return 'Full<br>House';
+            if (isFlush) return 'Flush';
+            if (isStraight) return 'Straight';
+            if (counts[0] === 3) return 'Triple';
+            if (counts[0] === 2 && counts[1] === 2) return '2 Pair';
+            if (counts[0] === 2) return '1 Pair';
+            const highRank = VALUE_RANKS[ranks[4]];
+            return `${highRank}<br>High`;
+        }
+        
+        function generateFallbackBoard() {
+            let fullDeck = []; SUITS.forEach(suit => RANKS.forEach(rank => fullDeck.push({ suit, rank })));
+            fullDeck.sort(() => 0.5 - Math.random());
+            let randomBoard = []; for (let i = 0; i < 5; i++) { randomBoard.push(fullDeck.slice(i * 5, i * 5 + 5)); }
+            return randomBoard;
+        }
+        
+        function transpose(matrix) {
+            return matrix[0].map((_, colIndex) => matrix.map(row => row[colIndex]));
+        }
+
+        function generateSpecialBoard() {
+            let attempts = 0;
+            const MAX_ATTEMPTS = 500;
+            while (attempts < MAX_ATTEMPTS) {
+                attempts++;
+                let board = Array(5).fill(null).map(() => Array(5).fill(null));
+                let fullDeck = [];
+                SUITS.forEach(suit => RANKS.forEach(rank => fullDeck.push({ suit, rank })));
+                fullDeck.sort(() => 0.5 - Math.random());
+                let deck = new Set(fullDeck.map(c => JSON.stringify(c)));
+                
+                let colIndices = [0, 1, 2, 3, 4].sort(() => 0.5 - Math.random());
+                let suitIndices = [0, 1, 2, 3].sort(() => 0.5 - Math.random());
+                let flushCols = [colIndices[0], colIndices[1]];
+                let flushSuits = [SUITS[suitIndices[0]], SUITS[suitIndices[1]]];
+                
+                let possible = true;
+                for (let i = 0; i < 2; i++) {
+                    let col = flushCols[i]; let suit = flushSuits[i];
+                    let suitCards = fullDeck.filter(c => c.suit === suit).sort(() => 0.5 - Math.random()).slice(0, 5);
+                    if (suitCards.length < 5) { possible = false; break; }
+                    for (let r = 0; r < 5; r++) {
+                        let card = suitCards[r];
+                        if (deck.has(JSON.stringify(card))) { board[r][col] = card; deck.delete(JSON.stringify(card)); } else { possible = false; break; }
+                    }
+                    if (!possible) break;
+                }
+                if (!possible) continue;
+
+                let deckArr = Array.from(deck).map(c => JSON.parse(c));
+                let rowIndices = [0, 1, 2, 3, 4].sort(() => 0.5 - Math.random());
+                let straightRows = [rowIndices[0], rowIndices[1], rowIndices[2]];
+                for (const r of straightRows) {
+                    let existingCards = board[r].filter(c => c !== null);
+                    let emptySlots = 5 - existingCards.length;
+                    let startRankIdx = Math.floor(Math.random() * (RANKS.length - 4));
+                    let straightRanks = RANKS.slice(startRankIdx, startRankIdx + 5);
+                    
+                    let requiredRanks = new Set(straightRanks);
+                    existingCards.forEach(c => requiredRanks.delete(c.rank));
+                    if (requiredRanks.size !== emptySlots) { possible = false; break; }
+                    
+                    let cardsToPlace = [];
+                    for (const rank of requiredRanks) {
+                        let availableCard = deckArr.find(c => c.rank === rank);
+                        if (availableCard) { cardsToPlace.push(availableCard); deckArr = deckArr.filter(c => c !== availableCard); } else { possible = false; break; }
+                    }
+                    if (!possible || cardsToPlace.length !== emptySlots) { possible = false; break; }
+                    
+                    let emptyIndices = board[r].map((c, i) => c === null ? i : -1).filter(i => i !== -1);
+                    emptyIndices.forEach((idx, i) => { board[r][idx] = cardsToPlace[i]; });
+                }
+                if (!possible) continue;
+
+                deck = new Set(deckArr.map(c => JSON.stringify(c)));
+                for (let r = 0; r < 5; r++) {
+                    for (let c = 0; c < 5; c++) {
+                        if (board[r][c] === null) {
+                            let cardStr = deck.values().next().value;
+                            if (!cardStr) { possible = false; break; }
+                            board[r][c] = JSON.parse(cardStr); deck.delete(cardStr);
+                        }
+                    }
+                    if(!possible) break;
+                }
+                if (!possible) continue;
+
+                let flushCount = 0;
+                for(let c = 0; c < 5; c++) { if (evaluateHand(board.map(row => row[c])).includes('Flush')) flushCount++; }
+                let straightCount = 0;
+                for(let r = 0; r < 5; r++) { if (evaluateHand(board[r]).includes('Straight')) straightCount++; }
+                
+                if (flushCount >= 2 && straightCount >= 3) {
+                    const shouldTranspose = Math.random() < 0.5;
+                    return shouldTranspose ? transpose(board) : board;
+                }
+            }
+
+            console.warn("Special board (2 Flushes, 3 Straights) generation failed. Generating fallback board.");
+            return generateFallbackBoard();
+        }
+        
+        function storeOriginalHands(board) {
+            originalHands.rows = board.map(row => evaluateHand(row));
+            originalHands.cols = Array(5).fill(null).map((_, i) => evaluateHand(board.map(row => row[i])));
+            originalHands.diag1 = evaluateHand([board[0][0], board[1][1], board[2][2], board[3][3], board[4][4]]);
+            originalHands.diag2 = evaluateHand([board[0][4], board[1][3], board[2][2], board[3][1], board[4][0]]);
+        }
+
+        function createNewGame() {
+            stopTimer();
+            moveHistory = [];
+            hintCount = 0;
+            hintBtn.disabled = false;
+            hintBtn.textContent = `Hint (${MAX_HINTS - hintCount} left)`;
+
+            currentBoard = generateSpecialBoard();
+            storeOriginalHands(currentBoard);
+
+            const totalInfoCount = 50;
+            const hiddenCount = DIFFICULTY_SETTINGS[currentDifficulty].hidden;
+            let indices = Array.from({ length: totalInfoCount }, (_, i) => i);
+            indices.sort(() => 0.5 - Math.random());
+            const hiddenIndices = new Set(indices.slice(0, hiddenCount));
+            
+            displayState = [];
+            for(let i = 0; i < 5; i++) {
+                const rowState = [];
+                for(let j = 0; j < 5; j++) {
+                    const suitIndex = (i * 5 + j) * 2;
+                    const rankIndex = suitIndex + 1;
+                    rowState.push({
+                        showSuit: !hiddenIndices.has(suitIndex),
+                        showRank: !hiddenIndices.has(rankIndex)
+                    });
+                }
+                displayState.push(rowState);
+            }
+            renderBoard();
+            renderCardTracker();
+            updateCardTracker();
+            startTimer();
+        }
+
+        function renderBoard(revealConfig = { isRevealing: false }) {
+            gameBoard.innerHTML = '';
+            const { rows, cols, diag1, diag2 } = originalHands;
+
+            const titleCell = document.createElement('div');
+            titleCell.style.gridColumn = 'span 5';
+            titleCell.className = 'flex items-center justify-center p-2 relative';
+            const difficultyColor = DIFFICULTY_SETTINGS[currentDifficulty].color;
+            titleCell.innerHTML = `
+                <div class="flex flex-col items-center">
+                    <svg viewBox="0 0 200 40" xmlns="http://www.w3.org/2000/svg" class="h-10">
+                        <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Georgia, serif" font-size="28" font-weight="bold" fill="#374151">Cross Poker</text>
+                    </svg>
+                    <div id="difficulty-display" class="text-sm font-bold ${difficultyColor}">Difficulty: ${currentDifficulty}</div>
+                </div>
+                <button id="help-btn-icon" class="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 bg-gray-400 text-white font-bold rounded-full flex items-center justify-center text-lg hover:bg-gray-500 transition">?</button>
+            `;
+            gameBoard.appendChild(titleCell);
+            
+            titleCell.querySelector('#help-btn-icon').addEventListener('click', () => helpModal.classList.remove('hidden'));
+
+            const diag2Cell = document.createElement('div');
+            diag2Cell.id = 'top-hand-cell';
+            diag2Cell.className = 'hand-cell bg-yellow-400 text-yellow-900';
+            diag2Cell.innerHTML = `<span class="transform -rotate-45">${diag2}</span>`;
+            gameBoard.appendChild(diag2Cell);
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const card = currentBoard[r][c];
+                    const state = displayState[r][c];
+                    const cardCell = document.createElement('div');
+                    cardCell.className = 'card-cell bg-white';
+
+                    const createSelect = (type) => {
+                        const select = document.createElement('select');
+                        select.className = 'card-input';
+                        select.dataset.row = r; select.dataset.col = c; select.dataset.type = type;
+                        const options = type === 'suit' ? SUITS : RANKS;
+                        ['?', ...options].forEach(opt => select.add(new Option(opt, opt)));
+                        
+                        select.addEventListener('focus', (e) => {
+                           e.target.dataset.prevValue = e.target.value;
+                        });
+
+                        select.addEventListener('change', (e) => {
+                            const prevValue = e.target.dataset.prevValue;
+                            moveHistory.push({
+                                element: e.target,
+                                prevValue: prevValue, 
+                            });
+
+                            let currentVal = e.target.value;
+                            e.target.classList.toggle('text-blue-600', currentVal === '?');
+                            e.target.classList.remove('text-red-600'); 
+                            if (type === 'suit' && currentVal !== '?') {
+                                if (['♥️', '♦️'].includes(currentVal)) {
+                                     e.target.classList.add('text-red-600');
+                                }
+                            }
+                            updateCardTracker();
+                        });
+                        return select;
+                    };
+
+                    const suitSelect = createSelect('suit');
+                    const rankSelect = createSelect('rank');
+                    
+                    if (revealConfig.isRevealing) {
+                         const userSuit = revealConfig.userBoard[r][c].suit;
+                         const userRank = revealConfig.userBoard[r][c].rank;
+                         
+                         if (!state.showSuit) {
+                            suitSelect.value = card.suit;
+                            suitSelect.classList.add('revealed-by-button');
+                            if (userSuit !== '?' && userSuit !== card.suit) {
+                                suitSelect.classList.add('incorrect');
+                            }
+                         } else {
+                            suitSelect.value = card.suit;
+                         }
+
+                         if (!state.showRank) {
+                            rankSelect.value = card.rank;
+                            rankSelect.classList.add('revealed-by-button');
+                            if (userRank !== '?' && userRank !== card.rank) {
+                                rankSelect.classList.add('incorrect');
+                            }
+                         } else {
+                            rankSelect.value = card.rank;
+                         }
+
+                         suitSelect.disabled = true;
+                         rankSelect.disabled = true;
+
+                    } else {
+                        if (state.showSuit) { suitSelect.value = card.suit; suitSelect.disabled = true; }
+                        if (state.showRank) { rankSelect.value = card.rank; rankSelect.disabled = true; }
+                    }
+                    
+                    if (suitSelect.value === '?') {
+                        suitSelect.classList.add('text-blue-600');
+                    } else if (['♥️', '♦️'].includes(suitSelect.value)) {
+                        suitSelect.classList.add('text-red-600');
+                    }
+                    if (rankSelect.value === '?') rankSelect.classList.add('text-blue-600');
+                    
+                    cardCell.appendChild(suitSelect);
+                    cardCell.appendChild(rankSelect);
+                    gameBoard.appendChild(cardCell);
+                }
+                const rowHandCell = document.createElement('div');
+                rowHandCell.innerHTML = rows[r];
+                rowHandCell.className = 'hand-cell bg-yellow-200 text-yellow-800';
+                gameBoard.appendChild(rowHandCell);
+            }
+
+            for (let c = 0; c < 5; c++) {
+                const colHandCell = document.createElement('div');
+                colHandCell.innerHTML = cols[c];
+                colHandCell.className = 'hand-cell bg-yellow-200 text-yellow-800';
+                gameBoard.appendChild(colHandCell);
+            }
+
+            const diag1Cell = document.createElement('div');
+            diag1Cell.id = 'bottom-diag-hand-cell';
+            diag1Cell.className = 'hand-cell bg-yellow-400 text-yellow-900';
+            diag1Cell.innerHTML = `<span class="transform rotate-45">${diag1}</span>`;
+            gameBoard.appendChild(diag1Cell);
+        }
+        
+        function renderCardTracker() {
+            cardTracker.innerHTML = '';
+            SUITS.forEach(suit => {
+                const suitCol = document.createElement('div');
+                suitCol.className = 'flex flex-col gap-1';
+                RANKS.forEach(rank => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'tracker-card';
+                    cardDiv.id = `tracker-${suit}-${rank}`;
+                    const cardName = document.createElement('span');
+                    cardName.textContent = `${suit}${rank}`;
+                    if (['♥️', '♦️'].includes(suit)) cardName.classList.add('text-red-600');
+                    const status = document.createElement('span');
+                    status.className = 'tracker-status';
+                    cardDiv.appendChild(cardName);
+                    cardDiv.appendChild(status);
+                    suitCol.appendChild(cardDiv);
+                });
+                cardTracker.appendChild(suitCol);
+            });
+        }
+        
+        function updateCardTracker() {
+             const cardCounts = {};
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const suit = document.querySelector(`select[data-row='${r}'][data-col='${c}'][data-type='suit']`).value;
+                    const rank = document.querySelector(`select[data-row='${r}'][data-col='${c}'][data-type='rank']`).value;
+                    if (suit !== '?' && rank !== '?') {
+                        const cardKey = `${suit}-${rank}`;
+                        cardCounts[cardKey] = (cardCounts[cardKey] || 0) + 1;
+                    }
+                }
+            }
+            document.querySelectorAll('.tracker-status').forEach(el => el.textContent = '');
+            for (const [cardKey, count] of Object.entries(cardCounts)) {
+                const statusEl = document.querySelector(`#tracker-${cardKey} .tracker-status`);
+                if (statusEl) {
+                    if (count > 1) {
+                        statusEl.textContent = '❗';
+                        statusEl.className = 'tracker-status text-red-600';
+                    } else {
+                        statusEl.textContent = '✓';
+                        statusEl.className = 'tracker-status text-green-600';
+                    }
+                }
+            }
+        }
+
+        function checkAnswers() {
+            const userBoard = Array(5).fill(null).map(() => Array(5).fill(null));
+            const cardSet = new Set();
+            let isComplete = true;
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const suit = document.querySelector(`select[data-row='${r}'][data-col='${c}'][data-type='suit']`).value;
+                    const rank = document.querySelector(`select[data-row='${r}'][data-col='${c}'][data-type='rank']`).value;
+                    if (suit === '?' || rank === '?') {
+                        isComplete = false;
+                        break;
+                    }
+                    const cardKey = `${suit}${rank}`;
+                    if (cardSet.has(cardKey)) {
+                        failureMessageEl.textContent = "Duplicate cards found on the board. Each card must be unique.";
+                        failureModal.classList.remove('hidden');
+                        return;
+                    }
+                    cardSet.add(cardKey);
+                    userBoard[r][c] = { suit, rank };
+                }
+                if (!isComplete) break;
+            }
+
+            if (!isComplete) {
+                failureMessageEl.textContent = "Please fill in all the hidden card information before checking.";
+                failureModal.classList.remove('hidden');
+                return;
+            }
+
+            const userRows = userBoard.map(row => evaluateHand(row));
+            if (JSON.stringify(userRows) !== JSON.stringify(originalHands.rows)) {
+                 failureMessageEl.textContent = "The cards in one or more rows do not match the required hand ranking.";
+                 failureModal.classList.remove('hidden');
+                 return;
+            }
+            const userCols = Array(5).fill(null).map((_, i) => evaluateHand(userBoard.map(row => row[i])));
+             if (JSON.stringify(userCols) !== JSON.stringify(originalHands.cols)) {
+                 failureMessageEl.textContent = "The cards in one or more columns do not match the required hand ranking.";
+                 failureModal.classList.remove('hidden');
+                 return;
+            }
+            const userDiag1 = evaluateHand([userBoard[0][0], userBoard[1][1], userBoard[2][2], userBoard[3][3], userBoard[4][4]]);
+            if (userDiag1 !== originalHands.diag1) {
+                failureMessageEl.textContent = "The cards in the top-left to bottom-right diagonal do not match the required hand ranking.";
+                failureModal.classList.remove('hidden');
+                return;
+            }
+            const userDiag2 = evaluateHand([userBoard[0][4], userBoard[1][3], userBoard[2][2], userBoard[3][1], userBoard[4][0]]);
+            if(userDiag2 !== originalHands.diag2) {
+                failureMessageEl.textContent = "The cards in the top-right to bottom-left diagonal do not match the required hand ranking.";
+                failureModal.classList.remove('hidden');
+                return;
+            }
+
+            stopTimer();
+            const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
+            const seconds = String(elapsedTime % 60).padStart(2, '0');
+            finalTimeEl.textContent = `Your time: ${minutes}:${seconds}`;
+            successModal.classList.remove('hidden');
+        }
+
+        function giveHint() {
+            if (hintCount >= MAX_HINTS) return;
+            
+            const hiddenInputs = Array.from(document.querySelectorAll('.card-input:not(:disabled)'));
+            if (hiddenInputs.length === 0) return;
+
+            const randomInput = hiddenInputs[Math.floor(Math.random() * hiddenInputs.length)];
+            const { row, col, type } = randomInput.dataset;
+            const correctValue = currentBoard[row][col][type];
+            
+            const cardCell = randomInput.parentElement;
+            cardCell.classList.add('flash-hint');
+            setTimeout(() => cardCell.classList.remove('flash-hint'), 1000);
+
+            moveHistory.push({
+                element: randomInput,
+                prevValue: randomInput.value
+            });
+
+            randomInput.value = correctValue;
+            randomInput.disabled = true;
+            randomInput.classList.remove('text-blue-600');
+            if (type === 'suit' && ['♥️', '♦️'].includes(correctValue)) {
+                randomInput.classList.add('text-red-600');
+            }
+            
+            hintCount++;
+            hintBtn.textContent = `Hint (${MAX_HINTS - hintCount} left)`;
+            if (hintCount >= MAX_HINTS) {
+                hintBtn.disabled = true;
+            }
+            updateCardTracker();
+        }
+
+        function undoMove() {
+            if (moveHistory.length === 0) return;
+            const lastMove = moveHistory.pop();
+            const { element, prevValue } = lastMove;
+            
+            element.value = prevValue;
+
+            const type = element.dataset.type;
+            element.classList.toggle('text-blue-600', prevValue === '?');
+            element.classList.remove('text-red-600');
+            if (type === 'suit' && prevValue !== '?') {
+                if (['♥️', '♦️'].includes(prevValue)) {
+                    element.classList.add('text-red-600');
+                }
+            }
+            updateCardTracker();
+        }
+        
+        function revealAll() { 
+            stopTimer();
+            const userBoard = Array(5).fill(null).map(() => Array(5).fill(null));
+             for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    userBoard[r][c] = {
+                        suit: document.querySelector(`select[data-row='${r}'][data-col='${c}'][data-type='suit']`).value,
+                        rank: document.querySelector(`select[data-row='${r}'][data-col='${c}'][data-type='rank']`).value
+                    }
+                }
+            }
+            renderBoard({ isRevealing: true, userBoard: userBoard });
+            updateCardTracker();
+        }
+        
+        function startNewGame(difficulty) {
+            currentDifficulty = difficulty;
+            difficultyModal.classList.add('hidden');
+            createNewGame();
+        }
+        
+        function startTimer() {
+            stopTimer();
+            startTime = Date.now();
+            timerInterval = setInterval(() => {
+                const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
+                const seconds = String(elapsedTime % 60).padStart(2, '0');
+                timerEl.textContent = `${minutes}:${seconds}`;
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
+        // Event Listeners
+        newGameBtn.addEventListener('click', () => difficultyModal.classList.remove('hidden'));
+        undoBtn.addEventListener('click', undoMove);
+        hintBtn.addEventListener('click', giveHint);
+        checkBtn.addEventListener('click', checkAnswers);
+        revealBtn.addEventListener('click', revealAll);
+        
+        helpModalCloseBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+        modalCloseBtn.addEventListener('click', () => {
+            successModal.classList.add('hidden');
+            difficultyModal.classList.remove('hidden');
+        });
+        successCloseBtn.addEventListener('click', () => successModal.classList.add('hidden'));
+        failureCloseBtn.addEventListener('click', () => failureModal.classList.add('hidden'));
+        difficultyCloseBtn.addEventListener('click', () => difficultyModal.classList.add('hidden'));
+
+        document.querySelectorAll('.difficulty-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                startNewGame(e.currentTarget.dataset.difficulty);
+            });
+        });
+
+        langEnBtn.addEventListener('click', () => {
+            helpEn.classList.remove('hidden');
+            helpKo.classList.add('hidden');
+            langEnBtn.classList.replace('bg-gray-200', 'bg-blue-500');
+            langEnBtn.classList.replace('text-gray-700', 'text-white');
+            langEnBtn.disabled = true;
+            langKoBtn.classList.replace('bg-blue-500', 'bg-gray-200');
+            langKoBtn.classList.replace('text-white', 'text-gray-700');
+            langKoBtn.disabled = false;
+        });
+        langKoBtn.addEventListener('click', () => {
+            helpKo.classList.remove('hidden');
+            helpEn.classList.add('hidden');
+            langKoBtn.classList.replace('bg-gray-200', 'bg-blue-500');
+            langKoBtn.classList.replace('text-gray-700', 'text-white');
+            langKoBtn.disabled = true;
+            langEnBtn.classList.replace('bg-blue-500', 'bg-gray-200');
+            langEnBtn.classList.replace('text-white', 'text-gray-700');
+            langEnBtn.disabled = false;
+        });
+
+
+        // Initial game start
+        startNewGame('Hard');
+    </script>
+</body>
+</html>
+
