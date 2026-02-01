@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fairtoon - 웹툰 불법 유통 근절 캠페인</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel CDN (JSX 변환용) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest" crossorigin></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+        .modal-enter { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #2563eb; cursor: pointer;
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.2);
+        }
+        /* 스크롤바 숨기기 */
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <!-- Fix: data-type="module"을 추가하여 import 구문을 지원하고, 에러 핸들링을 강화합니다 -->
+    <script type="text/babel" data-type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const { useState, useEffect, useMemo, useRef } = React;
+
+        // --- Firebase 설정 안전하게 가져오기 ---
+        let firebaseConfig = {};
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        } catch (e) {
+            console.error("Firebase config parse error:", e);
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'fairtoon-campaign';
+
+        // 아이콘 헬퍼 컴포넌트
+        const Icon = ({ name, className = "", size = 24, fill = "none" }) => {
+            const iconRef = useRef(null);
+            useEffect(() => {
+                if (iconRef.current && window.lucide) {
+                    const icon = window.lucide.icons[name];
+                    if (icon) {
+                        window.lucide.createIcons({
+                            icons: { [name]: icon },
+                            attrs: { 
+                                class: className, 
+                                width: size, 
+                                height: size, 
+                                fill: fill, 
+                                stroke: "currentColor",
+                                "stroke-width": 2
+                            }
+                        });
+                    }
+                }
+            }, [name, className, size, fill]);
+            return <i ref={iconRef} data-lucide={name} className={className}></i>;
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [signatures, setSignatures] = useState([]);
+            const [messages, setMessages] = useState([]);
+            const [viewCount, setViewCount] = useState(10);
+            const [formData, setFormData] = useState({ name: '', school: '', region: '서울', message: '' });
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            const [toast, setToast] = useState(null);
+
+            // 인증 로직 (Rule 3)
+            useEffect(() => {
+                const initAuth = async () => {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Auth error:", error);
+                    }
+                };
+                initAuth();
+                const unsubscribe = onAuthStateChanged(auth, setUser);
+                return () => unsubscribe();
+            }, []);
+
+            // 데이터 동기화 로직 (Rule 1 & 2)
+            useEffect(() => {
+                if (!user) return;
+
+                const sigRef = collection(db, 'artifacts', appId, 'public', 'data', 'signatures');
+                const msgRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+
+                const unsubSig = onSnapshot(sigRef, (snapshot) => {
+                    setSignatures(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()})));
+                }, (error) => console.error("Signatures listener error:", error));
+
+                const unsubMsg = onSnapshot(msgRef, (snapshot) => {
+                    const data = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                    // 메모리 내 정렬 (Rule 2)
+                    setMessages(data.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
+                }, (error) => console.error("Messages listener error:", error));
+
+                return () => {
+                    unsubSig();
+                    unsubMsg();
+                };
+            }, [user]);
+
+            const stats = useMemo(() => {
+                const total = signatures.length;
+                const regionStats = signatures.reduce((acc, c) => {
+                    if (c.region) acc[c.region] = (acc[c.region] || 0) + 1;
+                    return acc;
+                }, {});
+                const schoolStats = signatures.reduce((acc, c) => {
+                    if (c.school) acc[c.school] = (acc[c.school] || 0) + 1;
+                    return acc;
+                }, {});
+                return { total, regionStats, schoolStats };
+            }, [signatures]);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!user || isSubmitting) return;
+                setIsSubmitting(true);
+                try {
+                    const ts = serverTimestamp();
+                    const sigRef = collection(db, 'artifacts', appId, 'public', 'data', 'signatures');
+                    const msgRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');
+
+                    await addDoc(sigRef, {
+                        name: formData.name,
+                        school: formData.school,
+                        region: formData.region,
+                        timestamp: ts
+                    });
+
+                    if (formData.message) {
+                        await addDoc(msgRef, {
+                            name: formData.name,
+                            text: formData.message,
+                            timestamp: ts
+                        });
+                    }
+
+                    setFormData({ name: '', school: '', region: '서울', message: '' });
+                    setToast("서명이 안전하게 기록되었습니다!");
+                    setTimeout(() => setToast(null), 3000);
+                } catch (err) {
+                    console.error("Submission error:", err);
+                    setToast("오류가 발생했습니다. 다시 시도해 주세요.");
+                    setTimeout(() => setToast(null), 3000);
+                } finally {
+                    setIsSubmitting(false);
+                }
+            };
+
+            const damagePrice = viewCount * 300;
+
+            return (
+                <div className="min-h-screen text-slate-900 pb-20">
+                    {/* Toast Notification */}
+                    {toast && (
+                        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 text-white px-8 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-bounce border border-white/10">
+                            <Icon name="Heart" fill="#f43f5e" className="text-pink-500" size={20} />
+                            <span className="font-bold">{toast}</span>
+                        </div>
+                    )}
+
+                    {/* Navbar */}
+                    <nav className="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50 px-6 h-16 flex items-center justify-between">
+                        <div className="flex items-center gap-2 font-black text-2xl text-blue-600 cursor-pointer" onClick={() => window.scrollTo({top:0, behavior:'smooth'})}>
+                            <Icon name="Heart" className="text-pink-500" fill="currentColor" />
+                            <span>Fairtoon</span>
+                        </div>
+                        <div className="hidden md:flex gap-8 font-bold text-slate-500">
+                            <a href="#calc" className="hover:text-blue-600 transition">피해 계산</a>
+                            <a href="#info" className="hover:text-blue-600 transition">피해 현황</a>
+                            <a href="#sign" className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition">지금 서명하기</a>
+                        </div>
+                    </nav>
+
+                    {/* Hero Section */}
+                    <header className="bg-gradient-to-br from-blue-700 to-indigo-900 text-white py-24 text-center px-6 relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+                            <Icon name="BookOpen" size={200} className="absolute -top-10 -left-10" />
+                            <Icon name="PenTool" size={200} className="absolute -bottom-10 -right-10" />
+                        </div>
+                        <div className="max-w-4xl mx-auto relative z-10">
+                            <h1 className="text-4xl md:text-6xl font-black mb-8 leading-tight">
+                                대한민국 웹툰의 미래,<br /><span className="text-yellow-300 underline decoration-wavy underline-offset-8">우리의 정직함</span>으로 지켜요!
+                            </h1>
+                            <p className="text-xl opacity-80 mb-12 max-w-2xl mx-auto leading-relaxed">
+                                불법 유통은 작가님의 꿈과 노력을 훔치는 행위입니다.<br />
+                                Fairtoon 캠페인과 함께 깨끗하고 당당한 웹툰 문화를 만들어가요.
+                            </p>
+                            <div className="flex flex-wrap justify-center gap-6">
+                                <div className="bg-white/10 backdrop-blur-md px-10 py-5 rounded-3xl border border-white/10 text-left">
+                                    <p className="text-sm opacity-60 font-bold mb-1">현재 서명 인원</p>
+                                    <p className="text-4xl font-black">{(stats.total + 42).toLocaleString()}명</p>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-md px-10 py-5 rounded-3xl border border-white/10 text-left">
+                                    <p className="text-sm opacity-60 font-bold mb-1">참여 1위 지역</p>
+                                    <p className="text-4xl font-black">
+                                        {Object.entries(stats.regionStats).sort((a,b)=>b[1]-a[1])[0]?.[0] || '대기 중'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <main className="max-w-5xl mx-auto px-6 mt-24 space-y-32">
+                        {/* 1. Calculator */}
+                        <section id="calc" className="scroll-mt-24">
+                            <div className="flex flex-col lg:flex-row gap-16 items-center">
+                                <div className="flex-1 space-y-8">
+                                    <div className="inline-flex items-center gap-2 text-blue-600 font-bold bg-blue-50 px-4 py-1.5 rounded-full text-sm">
+                                        <Icon name="Calculator" size={16} />
+                                        <span>Webtoon Damage Calculator</span>
+                                    </div>
+                                    <h2 className="text-4xl font-black leading-tight">무심코 본 한 회,<br />작가님에겐 어떤 의미일까?</h2>
+                                    <p className="text-slate-500 text-lg leading-relaxed">
+                                        불법 사이트에서 본 웹툰 회차를 설정해보세요. <br />
+                                        그 행동이 작가님의 창작 환경에 미치는 실질적인 피해액을 계산합니다.
+                                    </p>
+                                    <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+                                        <div className="flex justify-between items-center mb-6">
+                                            <span className="font-bold text-slate-700">한 달간 불법 시청 횟수</span>
+                                            <span className="text-3xl font-black text-blue-600">{viewCount}회</span>
+                                        </div>
+                                        <input 
+                                            type="range" min="0" max="100" 
+                                            value={viewCount}
+                                            onChange={(e) => setViewCount(parseInt(e.target.value))}
+                                            className="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer"
+                                        />
+                                        <div className="flex justify-between text-xs font-bold text-slate-300 mt-4">
+                                            <span>0회</span>
+                                            <span>50회</span>
+                                            <span>100회</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex-1 w-full bg-slate-900 text-white p-12 rounded-[3rem] shadow-2xl relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-12 opacity-5 transition-transform group-hover:scale-110">
+                                        <Icon name="AlertTriangle" size={150} />
+                                    </div>
+                                    <h3 className="text-xl font-bold mb-10 border-l-4 border-yellow-400 pl-4">창작 환경 피해 리포트</h3>
+                                    <div className="space-y-10">
+                                        <div className="flex justify-between items-end border-b border-white/10 pb-6">
+                                            <span className="text-slate-400">직접 매출 손실</span>
+                                            <span className="text-4xl font-black text-red-500">₩{damagePrice.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex justify-between items-end border-b border-white/10 pb-6">
+                                            <span className="text-slate-400">창작 동기 저하</span>
+                                            <span className="text-2xl font-bold text-yellow-400">매우 높음</span>
+                                        </div>
+                                        <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
+                                            <p className="text-slate-400 text-sm italic leading-relaxed">
+                                                "이 금액은 작가님이 더 좋은 퀄리티를 위해 어시스턴트를 고용하거나 새로운 창작 장비를 구매할 수 있는 소중한 가치입니다."
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 2. Infographic */}
+                        <section id="info" className="bg-white p-16 rounded-[3rem] border border-slate-100 shadow-xl shadow-blue-900/5 text-center">
+                            <h2 className="text-3xl font-black mb-16">무너져가는 웹툰 생태계</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
+                                <div className="space-y-4">
+                                    <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                        <Icon name="TrendingDown" className="text-red-500" />
+                                    </div>
+                                    <p className="text-sm font-bold text-slate-400">불법 시장 규모</p>
+                                    <p className="text-4xl font-black text-red-600 tracking-tighter">8,427억원</p>
+                                    <p className="text-xs text-slate-400">정식 시장의 약 45% 잠식</p>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="w-16 h-16 bg-orange-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                        <Icon name="UserMinus" className="text-orange-500" />
+                                    </div>
+                                    <p className="text-sm font-bold text-slate-400">작가 수익 감소</p>
+                                    <p className="text-4xl font-black text-orange-500">평균 32%</p>
+                                    <p className="text-xs text-slate-400">생계 유지 불가능 작가 속출</p>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                                        <Icon name="ShieldOff" className="text-slate-500" />
+                                    </div>
+                                    <p className="text-sm font-bold text-slate-400">창작 포기 비율</p>
+                                    <p className="text-4xl font-black text-slate-800">10명 중 3명</p>
+                                    <p className="text-xs text-slate-400">수익 악화로 차기작 무산</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* 3. Signature & Message */}
+                        <section id="sign" className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                            <div className="bg-blue-600 p-12 rounded-[3rem] text-white shadow-2xl shadow-blue-500/30">
+                                <div className="flex items-center gap-3 mb-8">
+                                    <Icon name="PenTool" size={32} />
+                                    <h2 className="text-3xl font-black">캠페인 동참하기</h2>
+                                </div>
+                                <p className="text-xl opacity-90 mb-10 leading-relaxed font-bold italic">
+                                    "나는 앞으로 불법 유통 웹툰 사이트를 이용하지 않겠습니다. 정당한 대가를 지불하고 내가 사랑하는 작가님을 응원하겠습니다."
+                                </p>
+                                <form onSubmit={handleSubmit} className="space-y-4 text-slate-900">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input required placeholder="이름/닉네임" value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full px-6 py-4 rounded-2xl outline-none focus:ring-4 ring-yellow-400/50 transition" />
+                                        <input required placeholder="학교명" value={formData.school} onChange={e=>setFormData({...formData, school: e.target.value})} className="w-full px-6 py-4 rounded-2xl outline-none focus:ring-4 ring-yellow-400/50 transition" />
+                                    </div>
+                                    <select value={formData.region} onChange={e=>setFormData({...formData, region: e.target.value})} className="w-full px-6 py-4 rounded-2xl outline-none bg-white appearance-none cursor-pointer">
+                                        {['서울','경기','인천','강원','충청','전라','경상','제주'].map(r => <option key={r} value={r}>{r}</option>)}
+                                    </select>
+                                    <textarea placeholder="작가님께 전하는 응원의 한마디 (선택)" value={formData.message} onChange={e=>setFormData({...formData, message: e.target.value})} rows={3} className="w-full px-6 py-4 rounded-2xl outline-none resize-none" />
+                                    <button type="submit" disabled={isSubmitting} className="w-full bg-white text-blue-600 font-black py-5 rounded-2xl text-xl hover:bg-yellow-300 hover:text-slate-900 transition flex items-center justify-center gap-3 shadow-xl mt-4">
+                                        {isSubmitting ? "약속 기록 중..." : "서명하고 작가님 지키기"}
+                                        <Icon name="ChevronRight" />
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div className="flex flex-col bg-white p-12 rounded-[3rem] border border-slate-100 shadow-sm">
+                                <h3 className="text-2xl font-black mb-8 flex items-center gap-3">
+                                    <Icon name="Send" className="text-blue-600" />
+                                    실시간 응원 보드
+                                </h3>
+                                <div className="flex-1 overflow-y-auto pr-4 space-y-4 max-h-[550px] scrollbar-hide">
+                                    {messages.map((m, idx) => (
+                                        <div key={idx} className="p-6 rounded-[2rem] bg-slate-50 border border-slate-100 transition hover:border-blue-200 group">
+                                            <div className="flex justify-between items-center mb-3">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="font-black text-sm text-blue-600">{m.name}</span>
+                                                    <span className="text-[10px] bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold uppercase">{m.region}</span>
+                                                </div>
+                                                <span className="text-[10px] text-slate-400 font-medium">
+                                                    {m.timestamp?.seconds ? new Date(m.timestamp.seconds * 1000).toLocaleDateString() : '방금'}
+                                                </span>
+                                            </div>
+                                            <p className="text-slate-600 text-sm leading-relaxed">{m.text || "작가님들을 위해 서명에 동참했습니다!"}</p>
+                                        </div>
+                                    ))}
+                                    {messages.length === 0 && (
+                                        <div className="h-full flex flex-col items-center justify-center text-slate-300 py-20">
+                                            <Icon name="MessageSquare" size={60} className="mb-6 opacity-10" />
+                                            <p className="font-bold">첫 번째 응원의 주인공이 되어보세요!</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </section>
+                    </main>
+
+                    <footer className="bg-slate-950 text-white py-24 px-6 text-center mt-32">
+                        <div className="max-w-4xl mx-auto space-y-10">
+                            <div className="flex items-center justify-center gap-3 font-black text-4xl">
+                                <Icon name="Heart" className="text-pink-500" fill="currentColor" size={40} />
+                                <span>Fairtoon</span>
+                            </div>
+                            <p className="text-slate-500 text-lg max-w-lg mx-auto leading-relaxed">
+                                대한민국 웹툰의 건강한 미래를 위해 함께 노력해 주셔서 감사합니다.<br />
+                                정당한 응원이 작가님들에게 가장 큰 힘이 됩니다.
+                            </p>
+                            <div className="pt-12 border-t border-white/5 text-slate-700 text-sm font-medium">
+                                © 2024 Fairtoon Campaign Organization. All Rights Reserved.
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        // DOM이 준비된 후 렌더링을 시작합니다
+        window.addEventListener('DOMContentLoaded', () => {
+            const rootElement = document.getElementById('root');
+            if (rootElement) {
+                const root = ReactDOM.createRoot(rootElement);
+                root.render(<App />);
+            }
+        });
+    </script>
+</body>
+</html>
