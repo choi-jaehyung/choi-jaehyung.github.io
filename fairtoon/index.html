@@ -1,0 +1,214 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2575.7">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="ko"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta charset="UTF-8"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;title&gt;Fairtoon - 웹툰 불법 유통 근절 캠페인&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Tailwind CSS CDN --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://cdn.tailwindcss.com"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- React &amp; ReactDOM CDN --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://unpkg.com/react@18/umd/react.production.min.js"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Babel CDN (JSX 변환용) --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://unpkg.com/@babel/standalone/babel.min.js"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Lucide Icons CDN --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script src="https://unpkg.com/lucide@latest"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>@import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800&amp;display=swap');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>body { font-family: 'Pretendard', sans-serif; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>.modal-enter { animation: fadeIn 0.3s ease-out; }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }</p>
+<p class="p1"><span class="Apple-converted-space">        </span>input[type=range]::-webkit-slider-thumb {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>-webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #2563eb; cursor: pointer;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body class="bg-slate-50"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;div id="root"&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;!-- Fix: data-type="module"을 추가하여 import 구문을 지원합니다 --&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;script type="text/babel" data-type="module"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const { useState, useEffect, useMemo, useRef } = React;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// --- Firebase 설정 ---</p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 만약 본인의 웹사이트에 업로드할 때 데이터가 안 나온다면,<span class="Apple-converted-space"> </span></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 본인의 Firebase Console에서 받은 config 객체로 이 부분을 교체하세요.</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const app = initializeApp(firebaseConfig);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const auth = getAuth(app);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const db = getFirestore(app);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const appId = typeof __app_id !== 'undefined' ? __app_id : 'fairtoon-campaign';</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 아이콘 헬퍼 컴포넌트</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const Icon = ({ name, className = "", size = 24, fill = "none" }) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const iconRef = useRef(null);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>useEffect(() =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (iconRef.current &amp;&amp; window.lucide) {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>window.lucide.createIcons({</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>icons: { [name]: window.lucide.icons[name] },</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>attrs: { class: className, width: size, height: size, fill: fill, stroke: "currentColor" }</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">                </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}, [name, className, size, fill]);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>return &lt;i ref={iconRef} data-lucide={name}&gt;&lt;/i&gt;;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const App = () =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const [user, setUser] = useState(null);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const [signatures, setSignatures] = useState([]);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const [messages, setMessages] = useState([]);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const [viewCount, setViewCount] = useState(10);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const [formData, setFormData] = useState({ name: '', school: '', region: '서울', message: '' });</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const [isSubmitting, setIsSubmitting] = useState(false);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const [toast, setToast] = useState(null);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>useEffect(() =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const initAuth = async () =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (typeof __initial_auth_token !== 'undefined' &amp;&amp; __initial_auth_token) {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>await signInWithCustomToken(auth, __initial_auth_token);</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>await signInAnonymously(auth);</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">                </span>};</p>
+<p class="p1"><span class="Apple-converted-space">                </span>initAuth();</p>
+<p class="p1"><span class="Apple-converted-space">                </span>onAuthStateChanged(auth, setUser);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}, []);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>useEffect(() =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (!user) return;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const sigRef = collection(db, 'artifacts', appId, 'public', 'data', 'signatures');</p>
+<p class="p1"><span class="Apple-converted-space">                </span>const msgRef = collection(db, 'artifacts', appId, 'public', 'data', 'messages');</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                </span>onSnapshot(sigRef, (s) =&gt; setSignatures(s.docs.map(d =&gt; ({id: d.id, ...d.data()}))));</p>
+<p class="p1"><span class="Apple-converted-space">                </span>onSnapshot(msgRef, (s) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const data = s.docs.map(d =&gt; ({id: d.id, ...d.data()}));</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>setMessages(data.sort((a, b) =&gt; (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));</p>
+<p class="p1"><span class="Apple-converted-space">                </span>});</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}, [user]);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const stats = useMemo(() =&gt; ({</p>
+<p class="p1"><span class="Apple-converted-space">                </span>total: signatures.length,</p>
+<p class="p1"><span class="Apple-converted-space">                </span>regionStats: signatures.reduce((acc, c) =&gt; ({...acc, [c.region]: (acc[c.region] || 0) + 1}), {}),</p>
+<p class="p1"><span class="Apple-converted-space">                </span>schoolStats: signatures.reduce((acc, c) =&gt; ({...acc, [c.school]: (acc[c.school] || 0) + 1}), {})</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}), [signatures]);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const handleSubmit = async (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>e.preventDefault();</p>
+<p class="p1"><span class="Apple-converted-space">                </span>if (!user || isSubmitting) return;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>setIsSubmitting(true);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>try {</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>const ts = serverTimestamp();</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'signatures'), {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>...formData, timestamp: ts</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>if (formData.message) {</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'messages'), {</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>name: formData.name, text: formData.message, timestamp: ts</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>});</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>setFormData({ name: '', school: '', region: '서울', message: '' });</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>setToast("서명이 완료되었습니다!");</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>setTimeout(() =&gt; setToast(null), 3000);</p>
+<p class="p1"><span class="Apple-converted-space">                </span>} catch (err) { console.error(err); } finally { setIsSubmitting(false); }</p>
+<p class="p1"><span class="Apple-converted-space">            </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>return (</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;div className="min-h-screen text-slate-900 pb-20"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>{toast &amp;&amp; (</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div className="fixed top-20 left-1/2 -translate-x-1/2 z-[100] bg-blue-600 text-white px-8 py-3 rounded-full shadow-xl font-bold animate-bounce"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>{toast}</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>)}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;nav className="bg-white/80 backdrop-blur-md border-b sticky top-0 z-50 px-6 h-16 flex items-center justify-between"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div className="flex items-center gap-2 font-black text-2xl text-blue-600"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;Icon name="Heart" className="text-pink-500" fill="currentColor" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;span&gt;Fairtoon&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div className="flex gap-4"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;a href="#sign" className="bg-blue-600 text-white px-5 py-2 rounded-full font-bold"&gt;서명하기&lt;/a&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/nav&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;header className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white py-24 text-center px-6"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;h1 className="text-5xl font-black mb-6"&gt;불법 웹툰 이용 근절,&lt;br /&gt;&lt;span className="text-yellow-300"&gt;Fairtoon&lt;/span&gt;이 함께합니다.&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;p className="text-xl opacity-90 mb-12"&gt;당신의 정당한 감상이 작가님의 내일을 만듭니다.&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;div className="flex justify-center gap-6"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;div className="bg-white/10 p-6 rounded-2xl border border-white/20"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;p className="text-sm opacity-70"&gt;현재 서명 인원&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;p className="text-3xl font-bold"&gt;{stats.total.toLocaleString()}명&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/header&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;main className="max-w-4xl mx-auto px-6 mt-20 space-y-24"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;section id="calc" className="bg-white p-10 rounded-3xl shadow-sm border"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;h2 className="text-2xl font-bold mb-8 flex items-center gap-2"&gt;&lt;Icon name="Calculator" className="text-blue-600" /&gt; 나의 소비 습관 피해 계산기&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;div className="space-y-6"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;p className="text-slate-600"&gt;한 달 동안 불법 사이트에서 본 웹툰은 총 몇 회인가요?&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;input type="range" min="0" max="100" value={viewCount} onChange={e =&gt; setViewCount(e.target.value)} className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;div className="flex justify-between items-center bg-slate-50 p-6 rounded-2xl"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                    </span>&lt;span className="font-bold text-slate-500"&gt;{viewCount}회 시청 시&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                    </span>&lt;span className="text-3xl font-black text-red-500"&gt;약 ₩{(viewCount * 300).toLocaleString()} 피해&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;/section&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;section id="sign" className="grid grid-cols-1 md:grid-cols-2 gap-10"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;div className="bg-slate-900 text-white p-10 rounded-3xl"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;h2 className="text-2xl font-bold mb-6 flex items-center gap-2"&gt;&lt;Icon name="PenTool" className="text-blue-400" /&gt; 캠페인 동참 서명&lt;/h2&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;form onSubmit={handleSubmit} className="space-y-4 text-slate-900"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                    </span>&lt;input required placeholder="이름" value={formData.name} onChange={e =&gt; setFormData({...formData, name: e.target.value})} className="w-full p-4 rounded-xl outline-none" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                    </span>&lt;input required placeholder="학교명" value={formData.school} onChange={e =&gt; setFormData({...formData, school: e.target.value})} className="w-full p-4 rounded-xl outline-none" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                    </span>&lt;select value={formData.region} onChange={e =&gt; setFormData({...formData, region: e.target.value})} className="w-full p-4 rounded-xl outline-none bg-white"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                        </span>{['서울','경기','인천','충청','전라','경상','강원','제주'].map(r =&gt; &lt;option key={r} value={r}&gt;{r}&lt;/option&gt;)}</p>
+<p class="p1"><span class="Apple-converted-space">                                    </span>&lt;/select&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                    </span>&lt;textarea placeholder="작가님께 한마디" value={formData.message} onChange={e =&gt; setFormData({...formData, message: e.target.value})} className="w-full p-4 rounded-xl outline-none h-24" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                    </span>&lt;button type="submit" disabled={isSubmitting} className="w-full bg-blue-500 text-white font-bold py-4 rounded-xl hover:bg-blue-400 transition"&gt;약속하고 서명하기&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;/form&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;div className="space-y-4"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;h3 className="text-xl font-bold flex items-center gap-2"&gt;&lt;Icon name="Send" className="text-blue-600" /&gt; 최근 참여 메시지&lt;/h3&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;div className="h-[450px] overflow-y-auto space-y-3 pr-2"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                    </span>{messages.map((m, i) =&gt; (</p>
+<p class="p1"><span class="Apple-converted-space">                                        </span>&lt;div key={i} className="bg-white p-5 rounded-2xl border shadow-sm"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                            </span>&lt;div className="flex justify-between text-xs mb-2"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                                </span>&lt;span className="font-bold text-blue-600"&gt;{m.name} ({m.school})&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                                </span>&lt;span className="text-slate-400"&gt;{m.region}&lt;/span&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                            </span>&lt;p className="text-sm text-slate-600"&gt;{m.text || "서명에 동참했습니다!"}&lt;/p&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                        </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                                    </span>))}</p>
+<p class="p1"><span class="Apple-converted-space">                                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                            </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                        </span>&lt;/section&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                    </span>&lt;/main&gt;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>&lt;/div&gt;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const root = ReactDOM.createRoot(document.getElementById('root'));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>root.render(&lt;App /&gt;);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
