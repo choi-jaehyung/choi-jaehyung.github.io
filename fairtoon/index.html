@@ -69,7 +69,8 @@
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div onclick="showTab('home')" class="flex items-center gap-3 cursor-pointer group shrink-0">
                 <div class="w-12 h-12 flex items-center justify-center group-hover:rotate-12 transition-transform overflow-hidden">
-                    <img src="https://drive.google.com/uc?export=view&id=1AP6nLFlqNa_UeCA306klfz7gN5CHIlM6" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://cdn-icons-png.flaticon.com/512/10433/10433049.png'">
+                    <!-- Updated Logo URL -->
+                    <img src="https://choi-jaehyung.github.io/fairtoon/fairtoon%20logo.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://cdn-icons-png.flaticon.com/512/10433/10433049.png'">
                 </div>
                 <span class="text-2xl font-black tracking-tighter text-slate-900 uppercase">FAIRTOON</span>
             </div>
@@ -95,8 +96,7 @@
             </div>
         </div>
 
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden absolute top-full left-0 w-full bg-white border-b border-slate-100 p-6 space-y-2 shadow-xl">
+        <div id="mobile-menu" class="hidden absolute top-full left-0 w-full bg-white border-b border-slate-100 p-6 space-y-2 shadow-xl z-[60]">
             <button onclick="showTab('home')" class="w-full text-left px-6 py-4 rounded-2xl font-black text-sm uppercase">Home</button>
             <button onclick="showTab('creators')" class="w-full text-left px-6 py-4 rounded-2xl font-black text-sm uppercase">Creator Voices</button>
             <button onclick="showTab('risks')" class="w-full text-left px-6 py-4 rounded-2xl font-black text-sm uppercase">Risks of Piracy</button>
@@ -110,7 +110,7 @@
         
         <!-- HOME SECTION -->
         <section id="tab-home" class="tab-content active space-y-32">
-            <!-- Hero Section (Dynamic Mesh Gradient) -->
+            <!-- Hero Section -->
             <div class="hero-mesh-gradient rounded-[4rem] text-center py-24 md:py-32 px-4 max-w-7xl mx-auto shadow-2xl shadow-blue-900/5">
                 <div class="inline-block px-4 py-2 bg-blue-600 text-white rounded-full text-xs font-black tracking-[0.3em] uppercase mb-10 shadow-lg shadow-blue-500/20">
                     Official Campaign 2026
@@ -141,7 +141,6 @@
                     </div>
 
                     <div class="grid md:grid-cols-2 gap-8 items-stretch">
-                        <!-- Left: Input Slider Area -->
                         <div class="bg-white p-10 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col justify-center space-y-8">
                             <div class="flex items-center gap-4 text-blue-600">
                                 <i data-lucide="clock" class="w-8 h-8"></i>
@@ -159,15 +158,11 @@
                                 <input type="range" min="10" max="180" step="5" value="30" id="impact-slider" class="w-full h-3">
                                 <div class="flex justify-between text-[10px] font-black text-slate-300 uppercase tracking-widest px-1">
                                     <span>10m</span>
-                                    <span>45m</span>
-                                    <span>90m</span>
-                                    <span>135m</span>
                                     <span>3h</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Right: Output Result Area -->
                         <div class="bg-blue-600 p-10 rounded-[2.5rem] shadow-2xl shadow-blue-500/20 flex flex-col justify-center text-white relative overflow-hidden">
                             <div class="absolute -right-8 -bottom-8 opacity-10 rotate-12 pointer-events-none">
                                 <i data-lucide="alert-triangle" style="width: 240px; height: 240px;"></i>
@@ -298,46 +293,155 @@
             </div>
         </section>
 
-        <!-- OTHER SECTIONS -->
+        <!-- RISKS SECTION -->
         <section id="tab-risks" class="tab-content text-center py-20">
-            <h2 class="text-4xl font-black mb-8">Risks of Piracy</h2>
+            <h2 class="text-4xl font-black mb-8 uppercase">Risks of Piracy</h2>
             <div class="grid md:grid-cols-2 gap-8 text-left max-w-5xl mx-auto">
-                <div class="p-10 bg-slate-50 rounded-3xl">
-                    <i data-lucide="shield-alert" class="text-red-500 mb-4"></i>
-                    <h4 class="font-bold text-xl mb-2">Identity Theft</h4>
-                    <p class="text-slate-500">Most piracy sites contain phishing scripts designed to steal credentials.</p>
+                <div class="p-10 bg-slate-50 rounded-3xl border border-slate-100">
+                    <i data-lucide="shield-alert" class="text-red-500 mb-4 w-10 h-10"></i>
+                    <h4 class="font-black text-2xl mb-3">Identity Theft</h4>
+                    <p class="text-slate-500 leading-relaxed">Most piracy sites contain hidden scripts designed to steal your credentials and personal information.</p>
                 </div>
-                <div class="p-10 bg-slate-50 rounded-3xl">
-                    <i data-lucide="shield-alert" class="text-red-500 mb-4"></i>
-                    <h4 class="font-bold text-xl mb-2">Malware</h4>
-                    <p class="text-slate-500">Fake viewers hide malicious files that infect your devices.</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="tab-data" class="tab-content py-20">
-            <div class="max-w-4xl mx-auto text-center">
-                <h2 class="text-4xl font-black mb-8">Data Lab</h2>
-                <div class="p-12 bg-slate-50 rounded-[3rem] border border-slate-100">
-                    <i data-lucide="bar-chart-3" class="w-16 h-16 text-blue-600 mx-auto mb-6"></i>
-                    <p class="text-slate-500">Detailed industry reports and analysis coming soon.</p>
+                <div class="p-10 bg-slate-50 rounded-3xl border border-slate-100">
+                    <i data-lucide="shield-alert" class="text-red-500 mb-4 w-10 h-10"></i>
+                    <h4 class="font-black text-2xl mb-3">Malware & Ransomware</h4>
+                    <p class="text-slate-500 leading-relaxed">Fake viewers hide malicious files that can lock your devices and hold your data hostage.</p>
                 </div>
             </div>
         </section>
 
-        <section id="tab-about" class="tab-content text-center py-20">
-            <h2 class="text-4xl font-black mb-8 uppercase tracking-tight">About Fairtoon</h2>
-            <p class="text-slate-500 max-w-2xl mx-auto mb-16 font-medium">FAIRTOON dreams of a transparent ecosystem where creators thrive.</p>
-            <div class="grid md:grid-cols-2 gap-10 text-left max-w-5xl mx-auto">
-                <div class="p-12 border-2 border-slate-50 rounded-[3rem] hover:border-blue-100 transition-colors">
-                    <i data-lucide="target" class="text-blue-600 mb-6 w-10 h-10"></i>
-                    <h4 class="font-black text-2xl mb-4">Vision & Mission</h4>
-                    <p class="text-slate-500 leading-relaxed">Restoring the value of digital storytelling by ensuring creators are justly rewarded for their labor.</p>
+        <!-- DATA LAB SECTION -->
+        <section id="tab-data" class="tab-content py-20 text-center">
+            <h2 class="text-4xl font-black mb-8 uppercase">Data Lab</h2>
+            <div class="p-20 bg-slate-50 rounded-[4rem] border-4 border-dashed border-slate-200 max-w-4xl mx-auto">
+                <i data-lucide="bar-chart-3" class="w-20 h-20 text-blue-200 mx-auto mb-8"></i>
+                <p class="text-slate-400 font-bold uppercase tracking-widest text-sm">Detailed industry reports coming soon.</p>
+            </div>
+        </section>
+
+        <!-- HOW TO HELP SECTION -->
+        <section id="tab-help" class="tab-content py-20">
+            <div class="max-w-4xl mx-auto text-center space-y-12">
+                <h2 class="text-5xl font-black uppercase">How You Can Help</h2>
+                <div class="grid md:grid-cols-3 gap-8 text-center">
+                    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-black mx-auto">1</div>
+                        <h4 class="font-bold">Use Official Sites</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed">Support creators directly by using legitimate platforms.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-black mx-auto">2</div>
+                        <h4 class="font-bold">Report Piracy</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed">Found an illegal site? Report it to help protect our creators.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm space-y-4">
+                        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-black mx-auto">3</div>
+                        <h4 class="font-bold">Spread Awareness</h4>
+                        <p class="text-sm text-slate-500 leading-relaxed">Educate others about the impact of piracy on storytelling.</p>
+                    </div>
                 </div>
-                <div class="p-12 border-2 border-slate-50 rounded-[3rem] hover:border-blue-100 transition-colors">
-                    <i data-lucide="help-circle" class="text-blue-600 mb-6 w-10 h-10"></i>
-                    <h4 class="font-black text-2xl mb-4">FAQ</h4>
-                    <p class="text-slate-500 leading-relaxed">Find answers to common questions about our methodology and campaign goals.</p>
+            </div>
+        </section>
+
+        <!-- ABOUT US SECTION (Vertical Team Layout) -->
+        <section id="tab-about" class="tab-content space-y-32">
+            <!-- Vision & Mission -->
+            <div class="text-center max-w-4xl mx-auto space-y-6">
+                <h2 class="text-5xl font-black text-slate-900 uppercase tracking-tight">About Fairtoon</h2>
+                <p class="text-slate-500 text-xl font-medium leading-relaxed">FAIRTOON dreams of a transparent ecosystem where creators thrive and readers can read with pride.</p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-10 max-w-6xl mx-auto">
+                <div class="p-12 bg-blue-600 text-white rounded-[3.5rem] shadow-2xl shadow-blue-500/20 space-y-6">
+                    <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center">
+                        <i data-lucide="target" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-3xl font-black">Our Vision</h3>
+                    <p class="text-blue-100 text-lg leading-relaxed">
+                        To build a world where the act of creation is respected as a cornerstone of culture, ensuring every storyteller receives the rewards they deserve.
+                    </p>
+                </div>
+                <div class="p-12 bg-slate-900 text-white rounded-[3.5rem] shadow-2xl shadow-slate-900/20 space-y-6">
+                    <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center text-blue-400">
+                        <i data-lucide="shield-check" class="w-8 h-8"></i>
+                    </div>
+                    <h3 class="text-3xl font-black">Our Mission</h3>
+                    <p class="text-slate-300 text-lg leading-relaxed">
+                        We leverage transparent data and artist voices to eliminate piracy habits, creating a sustainable environment for digital comics to flourish globally.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Meet Our Team (Vertical Layout Update) -->
+            <div class="space-y-16 max-w-5xl mx-auto">
+                <div class="text-center space-y-4">
+                    <h3 class="text-4xl font-black uppercase tracking-tight">Meet Our Team</h3>
+                    <p class="text-slate-400">The minds dedicated to protecting digital stories.</p>
+                </div>
+                <div class="space-y-8">
+                    <!-- Founder & CEO: Jiho Choi -->
+                    <div class="p-8 md:p-12 bg-white border border-slate-100 rounded-[3rem] flex flex-col md:flex-row items-center gap-10 hover:shadow-2xl transition-all group">
+                        <div class="w-48 h-48 md:w-56 md:h-56 bg-blue-50 rounded-[2.5rem] flex items-center justify-center overflow-hidden shadow-inner border border-slate-100 shrink-0">
+                            <img src="https://choi-jaehyung.github.io/fairtoon/2026_Choi%20Jiho.jpg" alt="Jiho Choi" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        </div>
+                        <div class="space-y-4 text-center md:text-left">
+                            <div>
+                                <h4 class="text-3xl font-black">Jiho Choi</h4>
+                                <p class="text-blue-600 text-[12px] font-black uppercase tracking-[0.2em] mt-1">Founder & CEO</p>
+                            </div>
+                            <p class="text-slate-500 text-lg leading-relaxed font-light">Passionate advocate for digital rights and lifelong webtoon fan dedicated to protecting creator value and ensuring the sustainability of the creative ecosystem for future generations.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Member 2 -->
+                    <div class="p-8 md:p-12 bg-white border border-slate-100 rounded-[3rem] flex flex-col md:flex-row items-center gap-10 hover:shadow-2xl transition-all group">
+                        <div class="w-48 h-48 md:w-56 md:h-56 bg-slate-50 rounded-[2.5rem] flex items-center justify-center overflow-hidden shadow-inner border border-slate-100 shrink-0 text-slate-300">
+                            <i data-lucide="user" class="w-20 h-20"></i>
+                        </div>
+                        <div class="space-y-4 text-center md:text-left">
+                            <div>
+                                <h4 class="text-3xl font-black">Sarah Kim</h4>
+                                <p class="text-blue-600 text-[12px] font-black uppercase tracking-[0.2em] mt-1">Data Scientist</p>
+                            </div>
+                            <p class="text-slate-500 text-lg leading-relaxed font-light">Specializing in quantifying industry impact and analyzing financial trends in digital content to provide the hard data needed for policy changes and awareness campaigns.</p>
+                        </div>
+                    </div>
+
+                    <!-- Team Member 3 -->
+                    <div class="p-8 md:p-12 bg-white border border-slate-100 rounded-[3rem] flex flex-col md:flex-row items-center gap-10 hover:shadow-2xl transition-all group">
+                        <div class="w-48 h-48 md:w-56 md:h-56 bg-blue-50 rounded-[2.5rem] flex items-center justify-center overflow-hidden shadow-inner border border-slate-100 shrink-0 text-blue-600">
+                            <i data-lucide="user" class="w-20 h-20"></i>
+                        </div>
+                        <div class="space-y-4 text-center md:text-left">
+                            <div>
+                                <h4 class="text-3xl font-black">Leo Choi</h4>
+                                <p class="text-blue-600 text-[12px] font-black uppercase tracking-[0.2em] mt-1">Artist Liaison</p>
+                            </div>
+                            <p class="text-slate-500 text-lg leading-relaxed font-light">Former series editor serving as a bridge between creators and legitimate platforms, ensuring the artist's voice is always at the center of the Fairtoon movement.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ Section -->
+            <div class="max-w-4xl mx-auto space-y-16">
+                <div class="text-center space-y-4">
+                    <h3 class="text-4xl font-black uppercase tracking-tight">Frequently Asked Questions</h3>
+                    <p class="text-slate-400">Everything you need to know about our data and mission.</p>
+                </div>
+                <div class="space-y-6">
+                    <div class="p-8 border-2 border-slate-50 rounded-[2.5rem] hover:border-blue-100 transition-colors">
+                        <h4 class="font-black text-blue-600 text-xl mb-4">How does my signature help?</h4>
+                        <p class="text-slate-600 leading-relaxed font-medium">Your signature is compiled into our monthly impact reports which are presented to industry policymakers and major platform executives to advocate for better creator protections.</p>
+                    </div>
+                    <div class="p-8 border-2 border-slate-50 rounded-[2.5rem] hover:border-blue-100 transition-colors">
+                        <h4 class="font-black text-blue-600 text-xl mb-4">Is my personal data safe?</h4>
+                        <p class="text-slate-600 leading-relaxed font-medium">We take privacy seriously. Your data is encrypted and used solely for the purpose of verifying campaign numbers. We never sell or share your data with third-party advertisers.</p>
+                    </div>
+                    <div class="p-8 border-2 border-slate-50 rounded-[2.5rem] hover:border-blue-100 transition-colors">
+                        <h4 class="font-black text-blue-600 text-xl mb-4">Why is illegal site usage so harmful?</h4>
+                        <p class="text-slate-600 leading-relaxed font-medium">Illegal sites drain the primary revenue source that platforms use to pay creators. Without this income, artists cannot afford basic costs, leading to serial cancellations.</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -350,7 +454,8 @@
             <div class="col-span-1 md:col-span-2 space-y-10">
                 <div class="flex items-center justify-center md:justify-start gap-3">
                     <div class="w-12 h-12 flex items-center justify-center overflow-hidden">
-                        <img src="https://drive.google.com/uc?export=view&id=1AP6nLFlqNa_UeCA306klfz7gN5CHIlM6" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://cdn-icons-png.flaticon.com/512/10433/10433049.png'">
+                        <!-- Updated Footer Logo URL -->
+                        <img src="https://choi-jaehyung.github.io/fairtoon/fairtoon%20logo.png" alt="Logo" class="w-full h-full object-contain" onerror="this.src='https://cdn-icons-png.flaticon.com/512/10433/10433049.png'">
                     </div>
                     <span class="text-2xl font-black tracking-tighter uppercase">FAIRTOON</span>
                 </div>
@@ -383,14 +488,10 @@
     </footer>
 
     <script>
-        // Tab switching logic
         function showTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
             
-            // UI Button states (Removing focus shadow as requested)
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 btn.classList.remove('nav-btn-active');
                 btn.classList.add('text-slate-400', 'hover:text-slate-900', 'hover:bg-slate-100');
@@ -402,33 +503,33 @@
             }
             
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            document.getElementById('mobile-menu').classList.add('hidden');
+            if(document.getElementById('mobile-menu')) document.getElementById('mobile-menu').classList.add('hidden');
         }
 
-        // Impact Simulator logic
         const slider = document.getElementById('impact-slider');
         const display = document.getElementById('slider-display');
         const annualDisplay = document.getElementById('annual-loss');
 
-        slider.addEventListener('input', function() {
-            const val = parseInt(this.value);
-            display.innerHTML = `${val} <span class="text-sm uppercase tracking-widest text-slate-400">min</span>`;
-            
-            // Logic: 1000 KRW per 5 mins daily -> Annual
-            const dailyLoss = (val / 5) * 1000;
-            const annualLoss = dailyLoss * 365;
-            const formatted = new Intl.NumberFormat('ko-KR').format(annualLoss);
-            annualDisplay.innerHTML = `₩${formatted} <span class="text-xl opacity-80">/ year</span>`;
-        });
+        if(slider) {
+            slider.addEventListener('input', function() {
+                const val = parseInt(this.value);
+                display.innerHTML = `${val} <span class="text-sm uppercase tracking-widest text-slate-400">min</span>`;
+                const dailyLoss = (val / 5) * 1000;
+                const annualLoss = dailyLoss * 365;
+                const formatted = new Intl.NumberFormat('ko-KR').format(annualLoss);
+                annualDisplay.innerHTML = `₩${formatted} <span class="text-xl opacity-80">/ year</span>`;
+            });
+        }
 
-        // Signature form logic
-        document.getElementById('signature-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            this.classList.add('hidden');
-            document.getElementById('success-message').classList.remove('hidden');
-        });
+        const signatureForm = document.getElementById('signature-form');
+        if(signatureForm) {
+            signatureForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                this.classList.add('hidden');
+                document.getElementById('success-message').classList.remove('hidden');
+            });
+        }
 
-        // Mobile menu toggle
         function toggleMobileMenu() {
             const menu = document.getElementById('mobile-menu');
             menu.classList.toggle('hidden');
@@ -437,7 +538,6 @@
             lucide.createIcons();
         }
 
-        // Initialize Icons
         lucide.createIcons();
     </script>
 </body>
